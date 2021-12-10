@@ -2,6 +2,7 @@
 2) Удаление записей
 3) Поиск рецептов по неполному совпадению
 4) Вывод содержимого в алфавитном порядке*/
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <malloc.h>
 #include <string.h>
@@ -65,10 +66,146 @@ void menu() {
         case 4:
             show();
             break;
+        case 5: {
+            char* it;
+            printf("Enter filepath: ");
+            it = get_string();
+            save_file(it);
+            break;
+        }
+        case 6: {
+            char* it;
+            printf("Enter filepath: ");
+            it = get_string();
+            load_from_file(it);
+            break;
+        }
         case 0:
             exit(1);
         }
     }
+}
+
+void save_file(char* filePath) {
+    FILE* f;
+    if (f = fopen( filePath, "w")) {
+        sort();
+        int a = _msize(note_list) / sizeof(struct Note);
+        for (int i = 0; i < a - 1; i++) {
+            fprintf(f, ":\n");
+            fprintf(f,"%s%s%s", "[", note_list[i].name, "]\n");
+            int b = _msize(note_list[i].schedule) / sizeof(struct stuff);
+            fprintf(f, "[");
+            for (int j = 0; j < b - 1; j++) {
+                fprintf(f, "%s*%s ", note_list[i].schedule[j].st, note_list[i].schedule[j].quant);
+            }
+            fprintf(f, "]\n");
+            fprintf(f, "%s%s%s", "[", note_list[i].instruction, "]\n");
+        }
+        printf("Done!");
+        fclose(f);
+    }
+    else printf("error opening file\n");
+}
+void load_from_file(char* filePath) {
+    FILE* f;
+    char buf[128];
+    if (f = fopen(filePath, "r")) {
+        fgets(buf, 127, f);
+        while (!feof(f)) {
+            
+            if (buf[0] == ':') {
+                fgets(buf, 127, f);
+                struct Note one;
+                int iter = 0;
+                int mas = _msize(note_list);
+                int len = sizeof(struct Note);
+                one.schedule = create_list();
+                for (int i = 0; i < 128; i++) {
+                    int k = 1, len1 = 0, capacity =1;
+                    char* s = (char*)malloc(sizeof(char));
+                    if (buf[i] == '[') {
+                        i++;
+                        while (buf[i] != ']' && buf[i] != '\n') {
+                            s[(len1)++] = buf[i++]; // заносим в строку новый символ
+
+                            // если реальный размер больше размера контейнера, то увеличим его размер
+                            capacity++; // увеличиваем ёмкость строки в два раза
+                            s = (char*)realloc(s, capacity * sizeof(char));
+                        }
+                        s[len1] = '\0';
+                        one.name = s;
+                    }
+                    break;
+                }
+                fgets(buf, 127, f);
+                for (int i = 0; i < 128; i++) {
+                    
+                    if (buf[i] == '[') {
+                        i++;
+                        while (buf[i] != ']'&&buf[i] != '\n') {
+                            char *th1 = (char*)malloc(sizeof(char));
+                            char* th2 = (char*)malloc(sizeof(char));
+                            int len1 = 0, capacity = 1;
+                            while (buf[i] != '*') {
+                                
+                                th1[(len1)++] = buf[i++]; // заносим в строку новый символ
+
+                            // если реальный размер больше размера контейнера, то увеличим его размер
+                                capacity++; // увеличиваем ёмкость строки в два раза
+                                th1 = (char*)realloc(th1, capacity * sizeof(char));
+                            }
+                            th1[len1] = '\0';
+                            i++;
+                            len1 = 0, capacity = 1;
+                            while (buf[i] != ' ' && buf[i] != ']') {
+                                
+                                th2[(len1)++] = buf[i++]; // заносим в строку новый символ
+
+                            // если реальный размер больше размера контейнера, то увеличим его размер
+                                capacity++; // увеличиваем ёмкость строки в два раза
+                                th2 = (char*)realloc(th2, capacity * sizeof(char));
+                            }
+                            th2[len1] = '\0';
+                            int mas = _msize(one.schedule);
+                            int len = sizeof(struct stuff);
+                            one.schedule = (struct stuff*)realloc(one.schedule, (mas / len + 1) * sizeof(struct stuff));
+                            struct stuff it;
+                            it.st = th1;
+                            it.quant = th2;
+                            *(one.schedule + (mas / len) - 1) = it;
+                            i++;
+                        }
+                    }
+                    break;
+
+                }
+                fgets(buf, 127, f);
+                for (int i = 0; i < 128; i++) {
+                    int k = 0, len1 = 0, capacity =1;
+                    char* s = (char*)malloc(sizeof(char));
+                    if (buf[i] == '[') {
+                        i++;
+                        while (buf[i] != ']' && buf[i] != '\n') {
+                            s[(len1)++] = buf[i++]; // заносим в строку новый символ
+
+                            // если реальный размер больше размера контейнера, то увеличим его размер
+                            capacity++; // увеличиваем ёмкость строки в два раза
+                            s = (char*)realloc(s, capacity * sizeof(char)); // создаём новую строку с увеличенной ёмкостью  
+                        }
+                        s[len1] = '\0';
+                        one.instruction = s;
+                    }
+                    break;
+                }
+                note_list = (struct Note*)realloc(note_list, (mas / len + 1) * sizeof(struct Note));
+                *(note_list + (mas / len) - 1) = one;
+            }
+        }
+        printf("Done!\n");
+        fclose(f);
+    }
+    else printf("error opening file\n");
 }
 
 
